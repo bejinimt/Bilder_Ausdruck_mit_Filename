@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Bilder ziehen und drucken</title>
+  <style>
+    #dropzone {
+      width: 100%;
+      height: 150px;
+      border: 2px dashed #666;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    #fileList {
+      list-style: none;
+      padding: 0;
+    }
+    #fileList li {
+      margin: 5px 0;
+    }
+    /* Kopfzeile beim Drucken */
+    .filename {
+      text-align: center;
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+    .page {
+      page-break-after: always; /* jede Datei auf eigener Seite */
+    }
+  </style>
+</head>
+<body>
+  <h2>Ziehe JPG- oder PNG-Bilder hier hinein</h2>
+  <div id="dropzone">Bilder hierher ziehen</div>
+  
+  <ul id="fileList"></ul>
+  
+  <button id="printBtn">Alle Dateien drucken</button>
+  
+  <script>
+    const dropzone = document.getElementById("dropzone");
+    const fileList = document.getElementById("fileList");
+    const printBtn = document.getElementById("printBtn");
+    let files = [];
+
+    // Drag & Drop Events
+    dropzone.addEventListener("dragover", e => {
+      e.preventDefault();
+      dropzone.style.backgroundColor = "#eef";
+    });
+
+    dropzone.addEventListener("dragleave", e => {
+      e.preventDefault();
+      dropzone.style.backgroundColor = "";
+    });
+
+    dropzone.addEventListener("drop", e => {
+      e.preventDefault();
+      dropzone.style.backgroundColor = "";
+      const droppedFiles = Array.from(e.dataTransfer.files)
+        .filter(f => f.type === "image/jpeg" || f.type === "image/png");
+      files = files.concat(droppedFiles);
+      renderList();
+    });
+
+    function renderList() {
+      fileList.innerHTML = "";
+      files.forEach(file => {
+        const li = document.createElement("li");
+        li.textContent = file.name;
+        fileList.appendChild(li);
+      });
+    }
+
+    // Alle Bilder in EINEM Dokument drucken, jede Datei auf eigener Seite
+    printBtn.addEventListener("click", () => {
+      if (files.length === 0) return;
+      const printWindow = window.open("", "_blank");
+      let content = `
+        <html>
+          <head>
+            <title>Bilderdruck</title>
+            <style>
+              .filename { text-align:center; font-weight:bold; margin-bottom:20px; }
+              .page { page-break-after: always; }
+              img { max-width:100%; }
+            </style>
+          </head>
+          <body>
+      `;
+
+      files.forEach(file => {
+        const url = URL.createObjectURL(file);
+        content += `
+          <div class="page">
+            <div class="filename">${file.name}</div>
+            <img src="${url}" />
+          </div>
+        `;
+      });
+
+      content += `
+          </body>
+        </html>
+      `;
+
+      printWindow.document.write(content);
+      printWindow.document.close();
+
+      // Druckdialog starten
+      printWindow.onload = function() {
+        printWindow.print();
+        printWindow.onafterprint = function() { printWindow.close(); };
+      };
+    });
+  </script>
+</body>
+</html>
